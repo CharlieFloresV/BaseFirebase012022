@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "1090638153772",
+    "project_id": "syncfirebase-eba61",
+    "storage_bucket": "syncfirebase-eba61.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1090638153772:android:8efece250ab5dc0af96989",
+        "android_client_info": {
+          "package_name": "com.example.syncfirebase"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1090638153772-6uci4nm37qn9v6didkdp6p752i6u6afn.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBLZ9AK97z7nWRNcpYLq6wQ7DycVRzxl4o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1090638153772-6uci4nm37qn9v6didkdp6p752i6u6afn.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
