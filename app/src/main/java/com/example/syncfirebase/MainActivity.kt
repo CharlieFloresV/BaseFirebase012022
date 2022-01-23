@@ -6,9 +6,15 @@ import android.graphics.Bitmap
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.provider.MediaStore
+import android.util.Log
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.Toast
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.storage.FirebaseStorage
+import io.grpc.Context
+import java.io.ByteArrayOutputStream
+import java.util.*
 
 class MainActivity : AppCompatActivity() {
 
@@ -58,6 +64,32 @@ class MainActivity : AppCompatActivity() {
             // atributo scaleType cuyo valor es "centerCrop"
             imageView.setImageBitmap(imageBitmap)
             iconView.setImageBitmap(imageBitmap)
+
+            uploadPicture(imageBitmap)
+        }
+    }
+
+    private fun uploadPicture(bitmap: Bitmap){
+        val storageRef = FirebaseStorage.getInstance().reference
+        val imagesRef = storageRef.child("imagenesPrueba/${UUID.randomUUID()}.jpg")
+        val baos = ByteArrayOutputStream()
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos)
+        val data = baos.toByteArray()
+        val uploadTask = imagesRef.putBytes(data)
+
+        uploadTask.continueWithTask { task ->
+            if(!task.isSuccessful){
+                task.exception?.let { exception ->
+                    throw exception
+                }
+            }else{Log.d("Charlie", "EXITOSO")}
+            imagesRef.downloadUrl
+        }.addOnCompleteListener { task ->
+            if(task.isSuccessful){
+                val downloadUrl = task.result.toString()
+                FirebaseFirestore.getInstance().collection("ciudades").document("PR").update(mapOf("imageUrl" to downloadUrl))
+                Log.d("Charlie", "uploadPictureURL: $downloadUrl")
+            }else{Log.d("Charlie", "No fue exitoso :(")}
         }
     }
 }
