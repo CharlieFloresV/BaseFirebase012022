@@ -1,75 +1,64 @@
 package com.example.syncfirebase
 
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.graphics.Bitmap
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.util.Log
-import com.google.firebase.firestore.FirebaseFirestore
+import android.provider.MediaStore
+import android.widget.Button
+import android.widget.ImageView
+import android.widget.Toast
 
 class MainActivity : AppCompatActivity() {
+
+    //Se crea fuera de onCreate porque se usará en otros lugares
+    private lateinit var imageView: ImageView
+    private lateinit var iconView: ImageView
+    private val REQUEST_IMAGE_CAPTURE = 1
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        //Obtener instancia de Firestore
-        val db = FirebaseFirestore.getInstance()
+        val btnTakePhoto = findViewById<Button>(R.id.btnCapture)
+        imageView = findViewById(R.id.ivFoto)
+        iconView = findViewById(R.id.ivFoto2)
 
-        //Leer datos de un documento ¡¡¡UNA ÚNICA VES!!!
-        db.collection("ciudades").document("PR").get().addOnSuccessListener { document ->
-            document?.let {
-                /*
-                * Esta es una forma de recuperar un documento e ir accediendo a cada valor con su get...
-                * val population = document.getLong("population")
-                *
-                * val color = document.getString("color")
-                * Log.d("Charlie", "Valor recuperado ${document.data}")
-                * Log.d("Charlie", "Valor de  population = $population")
-                * Log.d("Charlie", "Valor de color =  $color")
-                */
-
-                /*
-                * Esta es otr forma de acceder, primero al objeto y después a sus datos por medio
-                * del objeto
-                */
-                val ciudad = document.toObject(Ciudad::class.java)
-                Log.d("Charlie", "Valor recuperado $ciudad")
-                Log.d("Charlie", "population: ${ciudad?.population}")
-                Log.d("Charlie", "color: ${ciudad?.color}")
-                Log.d("Charlie", "clima: ${ciudad?.clima}")
-            }
-        }.addOnFailureListener { exception ->
-            Log.d("FBerror", exception.toString())
+        btnTakePhoto.setOnClickListener {
+            dispatchTakePhotoIntent()
         }
+    }
 
-        //Leer datos de un documento ¡¡¡EN TIEMPO REAL!!!
-        db.collection("ciudades").document("PR").addSnapshotListener { documentSnapshot, firebaseFirestoreException ->
-            documentSnapshot?.let {document ->
-                val ciudad = document.toObject(Ciudad::class.java)//Ciudad es la clase creada más abajo, se hace de esta forma por comodidad
-                Log.d("Charlie", "Sync Valor recuperado $ciudad")
-                Log.d("Charlie", "Sync population: ${ciudad?.population}")
-                Log.d("Charlie", "Sync color: ${ciudad?.color}")
-                Log.d("Charlie", "Sync clima: ${ciudad?.clima}")
-            }
+    private fun dispatchTakePhotoIntent(){
+        // Lo que hace el siguiente intent es buscar cualquier aplicación que mediante ese flag
+        // levante la camara, todos los dispositivos hoy en día ya tienen por lo menos una
+        // aplicación para tomar foto, sin embargo se debe manejar una exception con try y catch
+        // por si no se tiene instalada ninguna.
+        val takePictureIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+
+        try {
+            startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE)
+        }catch (e: ActivityNotFoundException){
+            Toast.makeText(this, "No tiene instalada ninguna app para tomar foto", Toast.LENGTH_SHORT).show()
         }
+    }
 
-        //Agregar un documento con datos
-        //Importante: Si el documento ya existe lo sobreescribirá y si lo que le pasemos al set() no
-        // tiene alguno de los datos que maneja lo inicializará como lo indique la data class si es
-        // que fue definido un valor default.
-        db.collection("ciudades").document("EM").set(Ciudad(5000, "rojo")).addOnSuccessListener {
-            Log.d("Charlie", "Ciudad agregada correctamente")
-        }.addOnFailureListener { exception ->
-            Log.d("FBerror", exception.toString())
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        if(requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK){
+
+            // El siguiente "as Bitmap es un casteo, ya que "data" vuelve del Intent" y puede ser
+            // cualquier tipo de data que en este caso estamos casteando el resultado que viene de
+            // la camara a un "Bitmap".
+            val imageBitmap = data?.extras?.get("data") as Bitmap
+
+            // Lo que hace posible el ajuste de la foto a los margenes creados del imageView es el
+            // atributo scaleType cuyo valor es "centerCrop"
+            imageView.setImageBitmap(imageBitmap)
+            iconView.setImageBitmap(imageBitmap)
         }
-
     }
 }
 
-/*
-* Una forma cómo para trabajar es creando una clase para nuestro documento que queremos manipular,
-* de esta forma tendremos presente de manera clara los datos que contiene e incluso controlar
-* sus valores por default si se agrega un nuevo dato.
-*  */
-data class Ciudad(val population: Int = 0,
-                  val color: String = "",
-                  val clima: Int = 0)
