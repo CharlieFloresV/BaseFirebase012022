@@ -50,6 +50,11 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /*
+    * Con este método se cacha el resultado de la actividad que se inicio con el método
+    * "startActivityForResult", para lo cual se debe utilizar el requescode usado y evaluar el
+    * resulcode de la actividad.
+    */
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
 
@@ -69,24 +74,52 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /*
+    * Este método recibe la foto que se tomó en formato de Bitmap y lo almacena en la storage
+    */
     private fun uploadPicture(bitmap: Bitmap){
+        //CREAR REFERENCIA (Es como una ubicacion) -> Se crea una instancia que a su ves nos permite
+        // crear la referencia dentro de sotorage.
         val storageRef = FirebaseStorage.getInstance().reference
+        //Tomando la referencia creada ya se puede ubicar el archivo, en este caso creando otra
+        //carpeta llamada imagenesPrueba
         val imagesRef = storageRef.child("imagenesPrueba/${UUID.randomUUID()}.jpg")
-        val baos = ByteArrayOutputStream()
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos)
-        val data = baos.toByteArray()
-        val uploadTask = imagesRef.putBytes(data)
 
+        // Con imagesRef yo puedo poner archivos, subir información y para hacerlo tengo tres
+        // formas: putBytes, putFile y putStream, siendo las 2 primeras las más usadas.
+        // Con putFile se requiere obtener el path de la ubicación a la que queremos guardar el
+        // archivo, esta ubicación es del directorio del celular pero vendría siendo algo como lo
+        // siguiente en una pc windows, esto se conoce tambn como uri.
+        // imagesRef.putFile(uri:"C://carpeta1/carpeta2//...
+        // Con putBytes se sube una secuencia de bytes (En este caso ByteArray) a nuestro storage
+        val baos = ByteArrayOutputStream()//baos = 'b'yte 'a'rray 'o'utput 's'tream
+        //Lo que se debe hacer es lo siguiente: Tomamos la foto, la vamos a comprimir, se va a tomar
+        // el baos, se va transormar esa foto en un conjunto de bytes y se va a subir a firestore.
+        // Primero se comprime la foto, en este caso a un JPEG, se puede comprimir definiendo una
+        // calidad de 0 a 100, siendo 100 la calidad mayor y baos el output donde se guardará la
+        // imagen ya comprimida.
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos)
+        // Se crea data para transformar nuestro baos en un byte array. Esto es importante ya que
+        // el ByteArray es lo que necesitamos para subir nuestra foto a firestore.
+        val data = baos.toByteArray()
+        // El putBytes devuelve un "uploadTask", el cual puede ser usado para monitorear y manejar
+        // la carga. Esto se logra ya que "uploadTask" puede devolver un evento de "success",
+        // "progress" o "failure" en el momento de que se esté subiendo un archivo. También es
+        // posible pausar o resumir el control de la carga en el momento en que se hace.
+        val uploadTask = imagesRef.putBytes(data)//uploadTask es asincrono.
+
+        //Este caso es el de carga exitosa
+        // Se tona ek uploadTask y se le dice que se continue con el task para esperar el resultado
         uploadTask.continueWithTask { task ->
             if(!task.isSuccessful){
                 task.exception?.let { exception ->
-                    throw exception
+                    throw exception//Falta probar excepcion
                 }
             }else{Log.d("Charlie", "EXITOSO")}
             imagesRef.downloadUrl
         }.addOnCompleteListener { task ->
             if(task.isSuccessful){
-                val downloadUrl = task.result.toString()
+                val downloadUrl = task.result.toString()//Cotiene la uri de la imagen
                 FirebaseFirestore.getInstance().collection("ciudades").document("PR").update(mapOf("imageUrl" to downloadUrl))
                 Log.d("Charlie", "uploadPictureURL: $downloadUrl")
             }else{Log.d("Charlie", "No fue exitoso :(")}
